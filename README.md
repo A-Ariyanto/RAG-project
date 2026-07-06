@@ -5,8 +5,10 @@ A self made project that is applicibale and can be used to answer questions abou
 ## Tech Stack
 
 - Backend: FastAPI, async SQLAlchemy/asyncpg, Pydantic
-- Database: PostgreSQL with pgvector (one DB, both retrieval jobs; `pgvector
+- Database: PostgreSQL with pgvector (one DB, both retrieval jobs; `pgvector ` extension is required)
 
 Credit to Claude as I will work alongside it to make this project with the goal of upskilling myself in the field of AI and LLMs.
 
 ## Progress Report
+
+07/07/2026 - Setup the project repository after planning and discussing with Claude.
