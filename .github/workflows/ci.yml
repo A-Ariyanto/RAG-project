@@ -1,0 +1,56 @@
+name: CI
+
+# Runs on pushes to main (post-merge validation) and on every pull request.
+# CD (deploy) and the eval job are intentionally not here yet — they land in
+# Phase 7 (Cloud Run deploy) and Phase 5 (eval in CI) respectively, once there
+# is a service to deploy and a golden set to score. See ROADMAP.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR branch).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"  # matches the Dockerfile base image
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # The suite is pure unit tests (config wiring, sitemap URL filter,
+      # __NEXT_DATA__ extraction) — no database and no network needed.
+      # `python -m pytest` puts the repo root on sys.path so the app/ and
+      # ingestion/ packages import cleanly.
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+  docker-build:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # "Containerized from day one" is a project principle — verify the image
+      # still builds (catches Dockerfile / requirements.txt breakage) even
+      # though the test job installs the same deps directly.
+      - name: Build app image
+        run: docker build -t rag-project:ci .
+
+  # --- Future jobs (see ROADMAP.md) ---------------------------------------
+  # Phase 5: `eval` job — runs the retrieval/groundedness/refusal eval script;
+  #          local embeddings need no key, the LLM judge needs one secret.
+  # Phase 7: `deploy` job — build + push the image and deploy to Cloud Run;
+  #          gated on `test` passing and limited to pushes to main.
