@@ -3,3 +3,4 @@
 asyncpg>=0.30
 pydantic>=2.0
 pydantic-settings>=2.0
+pytest>=8.0
