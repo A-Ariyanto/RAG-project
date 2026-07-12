@@ -16,7 +16,7 @@ This file is the **working tracker**: what to build, in what order, and what's d
 
 | Phase | Goal | Status |
 |---|---|---|
-| [0 — Scaffold](#phase-0--scaffold) | Repo + Docker Compose skeleton with a running Postgres | 🔲 |
+| [0 — Scaffold](#phase-0--scaffold) | Repo + Docker Compose skeleton with a running Postgres | ✅ |
 | [1 — Corpus acquisition](#phase-1--corpus-acquisition) | ~300 raw handbook documents on disk | 🔲 |
 | [2 — Chunking + ingestion](#phase-2--chunking--ingestion) | Populated chunks table with embeddings + tsvector | 🔲 |
 | [3 — Hybrid retrieval](#phase-3--hybrid-retrieval-the-centerpiece) | The RRF SQL query, proven better than either method alone | 🔲 |
@@ -34,11 +34,11 @@ Phases are sequenced by dependency, not dates. Each phase has an exit criterion 
 **Goal:** a repo layout and local environment where `docker compose up` gives a working Postgres and an app container that can talk to it.
 
 **Tasks**
-- [ ] Lay out the repo skeleton (app package, ingestion dir, scripts dir, tests dir)
-- [ ] Write `docker-compose.yml`: Postgres from the `pgvector/pgvector` image + a Python app container
-- [ ] Set up `.env` handling with a committed `.env.example` (DB credentials, ports)
-- [ ] Write a hello-world script in the app container that connects to Postgres and confirms the `pgvector` extension is available
-- [ ] Update the README skeleton (setup instructions: clone, `.env`, `docker compose up`)
+- [x] Lay out the repo skeleton (app package, ingestion dir, scripts dir, tests dir)
+- [x] Write `docker-compose.yml`: Postgres from the `pgvector/pgvector` image + a Python app container
+- [x] Set up `.env` handling with a committed `.env.example` (DB credentials, ports)
+- [x] Write a hello-world script in the app container that connects to Postgres and confirms the `pgvector` extension is available
+- [x] Update the README skeleton (setup instructions: clone, `.env`, `docker compose up`)
 
 **Exit criterion:** `docker compose up` gives a running Postgres I can psql into; a hello-world script in the app container connects to it.
 

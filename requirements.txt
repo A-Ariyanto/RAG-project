@@ -1,0 +1,6 @@
+# Phase 0 dependencies only. Later phases (FastAPI, SQLAlchemy, sentence-transformers)
+# add their own deps as they land, per the roadmap.
+asyncpg>=0.30
+pydantic>=2.0
+pydantic-settings>=2.0
+pytest>=8.0
