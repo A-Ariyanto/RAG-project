@@ -53,5 +53,11 @@ Off-corpus questions (4) should be refused; answerable questions (28) should be 
 
 ### Answer groundedness (LLM-as-judge)
 
-_Skipped — `DEEPSEEK_API_KEY` not set. Retrieval and sweep above need no key; groundedness runs the real generation + a DeepSeek judge._
+| Metric | Result |
+|---|---|
+| Grounded answers | 26/28 (93%) |
+| Answers with inline citation | 27/28 (96%) |
+| Over-refusal (answerable wrongly declined) | 2/28 (7%) |
+| Correct decline (missing-attribute questions) | 2/2 (100%) |
+| Judge + generation cost | $0.0108 |
 
