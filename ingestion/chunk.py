@@ -227,21 +227,31 @@ def _associations(raw) -> list[tuple[str, str]]:
 
 
 def _offering_sentence(pc: dict, credit_points: int | None, terms: list[str]) -> str:
-    """A one-line prose summary of when/where/how the course is offered."""
+    """A prose summary of when/where/how the course is offered.
+
+    Phrased the way students actually ask ("how many credit points", "when can I
+    take it") rather than as terse field values — a Phase 3 finding: the old
+    "6 units of credit (UOC). offered in T1, T2, T3." embedded too far from
+    natural-language offering questions to be retrieved. The synonyms here
+    ("credit points", "take it in") are genuine, not keyword stuffing.
+    """
     bits: list[str] = []
     if credit_points is not None:
-        bits.append(f"{credit_points} units of credit (UOC)")
+        bits.append(f"worth {credit_points} units of credit (UOC, or credit points)")
     if terms:
-        bits.append(f"offered in {', '.join(terms)}")
+        bits.append(f"offered in {', '.join(terms)} — the terms you can enrol in and take it")
     study_level = pc.get("study_level")
     if isinstance(study_level, list) and study_level:
         label = study_level[0].get("label")
         if label:
-            bits.append(f"{label} level")
+            bits.append(f"taught at {label} level")
     campus = pc.get("campus")
     if isinstance(campus, str) and campus.strip():
         bits.append(f"at {campus.strip()}")
-    return ". ".join(bits).strip()
+    if not bits:
+        return ""
+    sentence = "; ".join(bits)
+    return sentence[0].upper() + sentence[1:] + "."
 
 
 def _leaf_codes(relationships) -> list[str]:
