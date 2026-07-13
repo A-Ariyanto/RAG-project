@@ -16,7 +16,7 @@ At the product level it's a chatbot; the engineering substance is a measurable r
 - Backend: FastAPI, async SQLAlchemy/asyncpg, Pydantic
 - Database: PostgreSQL with pgvector (one DB, both retrieval jobs; `pgvector/pgvector` Docker image)
 - Embeddings: **local** via sentence-transformers (e.g. `bge-small-en-v1.5`) — free, no API key, CI can embed queries without secrets
-- Generation: a cheap hosted model behind a **provider interface** (one function: prompt in → token stream out). Candidate: Gemini free tier via AI Studio; swappable to any paid cheap model later without touching the rest of the code. Final choice deferred to Phase 4.
+- Generation: a cheap hosted model behind a **provider interface** (one function: prompt in → token stream out). Chosen: **DeepSeek V4 Flash** via the DeepSeek cloud API; swappable to any other cheap model later without touching the rest of the code. Embeddings stay local (see routing split); generation is the one cloud call.
 - Frontend: deliberately minimal single-page React chat view — the backend is the star
 - Infra: Docker Compose for all local dev; GitHub Actions CI (tests + evals); GCP Cloud Run + Cloud SQL **only in the final phase**
 
@@ -48,7 +48,7 @@ The single RRF SQL query: CTE for vector KNN, CTE for `ts_rank`, joined with RRF
 **Exit:** for the probe queries, the right chunk is in the top 3 nearly always, and I can articulate *why* hybrid beats each single method on at least a few queries.
 
 ### Phase 4 — Service
-FastAPI app: `/ask` endpoint → embed query → RRF query → refusal threshold check (threshold as config, tuned in Phase 5) → generation via the provider interface with a citation-enforcing prompt → SSE stream → query_logs middleware (latency split retrieval/generation, token counts, cost, retrieved chunk IDs). Pick and wire the generation provider here (Gemini free tier first candidate). Learn FastAPI idioms as they come up: async SQLAlchemy sessions via dependency injection (vs DRF's request-scoped ORM), `StreamingResponse` for SSE.
+FastAPI app: `/ask` endpoint → embed query → RRF query → refusal threshold check (threshold as config, tuned in Phase 5) → generation via the provider interface with a citation-enforcing prompt → SSE stream → query_logs middleware (latency split retrieval/generation, token counts, cost, retrieved chunk IDs). Wire the generation provider here (DeepSeek V4 Flash via the DeepSeek cloud API; API key in `.env`). Learn FastAPI idioms as they come up: async SQLAlchemy sessions via dependency injection (vs DRF's request-scoped ORM), `StreamingResponse` for SSE.
 **Exit:** `curl -N localhost:8000/ask` streams a grounded, citation-marked answer; refusals return nearest matches; every query lands a row in query_logs.
 
 ### Phase 5 — Evaluation
