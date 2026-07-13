@@ -18,7 +18,22 @@ Golden set: **34 questions** (28 answerable across prerequisite / offering / UOC
 | vector-only | 11/16 (69%) | 7/12 (58%) |
 | fts-only | 14/16 (88%) | 11/12 (92%) |
 
-FTS leads on code-anchored questions and vector leads on name-only ones; hybrid tracks the stronger method on each, so it's the only retriever that doesn't collapse when the phrasing flips.
+**Where fusion changes the outcome (hit@3):**
+
+_Rescued by fusion_ (hybrid hits, a single method misses):
+- `prereq-comp1531` — "What do I need to have done before enrolling in COMP1531?" (missed by: fts)
+- `prereq-dbsystems-name` — "Before I can take Database Systems, what do I need to have finished?" (missed by: fts)
+- `prereq-os-name` — "What are the prerequisites for the Operating Systems course?" (missed by: vector)
+- `offer-comp3311-terms` — "In which terms is COMP3311 offered?" (missed by: vector)
+- `offer-progfund-name` — "In which terms is Programming Fundamentals offered?" (missed by: vector)
+- `uoc-comp9417` — "What are the credit points for COMP9417?" (missed by: vector)
+- `equiv-comp3231` — "Which courses is COMP3231 equivalent to?" (missed by: vector)
+
+_Regressed by fusion_ (hybrid misses, a single method hits):
+- `offer-comp3231-t2only` — "When can I take COMP3231?" (hit by: fts)
+- `offer-algorithms-name` — "Which term is Extended Algorithm Design and Analysis offered in?" (hit by: fts)
+- `offer-capstone-name` — "Is the computer science capstone project available in term 3?" (hit by: fts)
+- `offer-reasoning-name` — "When is the Workshop on Reasoning about Programs offered?" (hit by: fts)
 
 ### Refusal threshold sweep
 
