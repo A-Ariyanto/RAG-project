@@ -79,8 +79,9 @@ PROBES: list[Probe] = [
     Probe("Can I enrol in COMP2521 if I've already done COMP1927?",
           "COMP2521", ("enrolment_conditions",),
           "answer is the exclusion COMP1927 — both codes are exact tokens"),
-    Probe("which courses are excluded with Operating Systems",
-          "COMP3231", ("enrolment_conditions",)),
+    Probe("what are the exclusions for COMP3231?",
+          "COMP3231", ("enrolment_conditions",),
+          "code-anchored — 'Operating Systems' by name is ambiguous (COMP9201 too)"),
     Probe("what course is equivalent to COMP9201",
           "COMP3231", ("enrolment_conditions",),
           "COMP9201 appears ONLY inside COMP3231's equivalent list — FTS-only find"),
@@ -163,7 +164,7 @@ async def run(show: int) -> None:
         print("\n=== hit rate ===")
         print(f"{'method':<10}{'hit@1':>10}{'hit@3':>10}")
         for name, t in tallies.items():
-            print(f"{name:<10}{t.hit1}/{n:>8}{t.hit3}/{n:>8}")
+            print(f"{name:<10}{f'{t.hit1}/{n}':>10}{f'{t.hit3}/{n}':>10}")
 
         if hybrid_rescues:
             print("\n=== where fusion beat a single method (top-3) ===")
