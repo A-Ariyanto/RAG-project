@@ -51,6 +51,13 @@ DEFAULT_TOP_K = 10
 # query via .replace() where the query-text parameter sits at a different index.
 _OR_TSQUERY = "replace(plainto_tsquery('english', $1)::text, '&', '|')::tsquery"
 
+# ts_rank normalization flag. Default (0) applies NO length normalization, so a
+# long chunk that lists many courses outranks a short chunk that matches exactly
+# — "which courses is COMP3231 equivalent to" then surfaces big structure lists
+# over COMP3231's own terse equivalent line. Flag 1 divides by 1 + log(length),
+# rewarding concise exact matches, which suits our short metadata chunks.
+_TS_NORM = 1
+
 
 @dataclass
 class Result:
@@ -113,7 +120,7 @@ async def fts_search(
         f"""
         WITH q AS (SELECT {_OR_TSQUERY} AS tsq)
         SELECT id, doc_code, section_type, title, text, source_url,
-               ts_rank(tsv, q.tsq) AS score
+               ts_rank(tsv, q.tsq, {_TS_NORM}) AS score
         FROM chunks, q
         WHERE tsv @@ q.tsq
         ORDER BY score DESC, id
