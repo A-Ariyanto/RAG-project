@@ -431,6 +431,7 @@ def _pct(n: int, d: int) -> str:
 def render_markdown(
     items: list[Item],
     hit: RetrievalReport,
+    fusion: tuple[list[FusionCase], list[FusionCase]],
     sweep: SweepReport,
     ground: GroundednessReport | None,
 ) -> str:
