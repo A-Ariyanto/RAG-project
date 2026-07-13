@@ -7,3 +7,11 @@ pytest>=8.0
 pydantic>=2.0
 pydantic-settings>=2.0
 requests>=2.31
+
+# Phase 4 — the service unit tests import app.service/app.provider, whose modules
+# import asyncpg (retrieval, db) at top level; httpx is imported lazily inside the
+# provider's network call but kept here so the import graph resolves. Still no
+# torch/sentence-transformers or fastapi: these tests exercise pure logic
+# (prompt building, cost, refusal, SSE framing), not the network or the ASGI app.
+asyncpg>=0.30
+httpx>=0.27

@@ -20,7 +20,7 @@ This file is the **working tracker**: what to build, in what order, and what's d
 | [1 — Corpus acquisition](#phase-1--corpus-acquisition) | ~300 raw handbook documents on disk | ✅ |
 | [2 — Chunking + ingestion](#phase-2--chunking--ingestion) | Populated chunks table with embeddings + tsvector | ✅ |
 | [3 — Hybrid retrieval](#phase-3--hybrid-retrieval-the-centerpiece) | The RRF SQL query, proven better than either method alone | ✅ |
-| [4 — Service](#phase-4--service) | Streaming `/ask` endpoint with citations, refusal, and query logging | 🔲 |
+| [4 — Service](#phase-4--service) | Streaming `/ask` endpoint with citations, refusal, and query logging | ✅ |
 | [5 — Evaluation](#phase-5--evaluation) | Golden set + eval script running in CI, numbers in the README | 🔲 |
 | [6 — Minimal frontend](#phase-6--minimal-frontend) | Browser chat view with clickable citations | 🔲 |
 | [7 — Deployment](#phase-7--deployment) | Public URL on Cloud Run + finished README | 🔲 |
@@ -99,15 +99,15 @@ Do not touch FastAPI until this works.
 **Goal:** a streaming `/ask` endpoint that returns grounded, citation-marked answers, refuses when confidence is low, and logs every query.
 
 **Tasks**
-- [ ] Scaffold the FastAPI app with async SQLAlchemy sessions via dependency injection
-- [ ] `/ask` endpoint: embed query → RRF query → top-k chunks
-- [ ] Refusal threshold check as config (tuned later in Phase 5): below threshold, skip generation and return "I don't have enough information" with nearest matches
-- [ ] Build the provider interface (one function: prompt in → token stream out); generation model is DeepSeek V4 Flash via the DeepSeek cloud API (key in `.env`), kept swappable behind the interface
-- [ ] Write the citation-enforcing prompt: inline markers [1], [2] mapped to chunk IDs and source URLs
-- [ ] SSE streaming via `StreamingResponse`
-- [ ] `query_logs` table + middleware: latency split (retrieval vs generation), token counts, dollar cost, retrieved chunk IDs
+- [x] Scaffold the FastAPI app with a shared asyncpg pool via dependency injection (`app/main.py`, `app/db.py`). Deviated from the planned SQLAlchemy: the Phase 3 retrieval query is raw SQL returning asyncpg records, so an ORM would mean a second DB layer or a rewrite of the proven query — asyncpg end-to-end is cleaner here.
+- [x] `/ask` endpoint: embed query (in a threadpool) → RRF query → top-k chunks (`app/service.py`; `hybrid_search` gained an optional precomputed-embedding arg so the async path doesn't block on torch)
+- [x] Refusal threshold check as config (`settings.refusal_threshold`, tuned later in Phase 5): below threshold, skip generation and stream "I don't have enough information" with the nearest matches as citations
+- [x] Build the provider interface (`app/provider.py` — `Provider.stream`, prompt in → `StreamEvent` token stream out); generation is DeepSeek V4 Flash via the DeepSeek OpenAI-compatible API (key in `.env`), swappable via base_url/model config
+- [x] Write the citation-enforcing prompt (`app/prompt.py`): inline markers [1], [2] mapped to chunk IDs and source URLs (returned in the `meta` SSE event)
+- [x] SSE streaming via `StreamingResponse` (`meta` → `token` → `done` events)
+- [x] `query_logs` table + logging (`app/db.py`): latency split (retrieval vs generation), token counts, dollar cost, retrieved chunk IDs — one row per request, refusals included
 
-**Exit criterion:** `curl -N localhost:8000/ask` streams a grounded, citation-marked answer; refusals return nearest matches; every query lands a row in query_logs.
+**Exit criterion:** ✅ `curl -N localhost:8000/ask` streams a grounded, citation-marked answer; refusals return nearest matches; every query lands a row in query_logs. Verified end-to-end against the real stack: "In which terms is COMP3311 offered?" streamed token-by-token to `COMP3311 is offered in T1 and T2 [1].` with the `[1]` marker mapped to the COMP3311 offering source (top fused score 0.031); "What is the capital of France?" refused with the five nearest matches (0.0164 < 0.02 threshold); both wrote query_logs rows (the answered one: retrieval + generation split, 438+14 tokens, ~$0.00013 on deepseek-chat). 36 unit tests green. Placeholder `refusal_threshold` set to 0.02 (sits in the observed gap between in-domain ~0.031 and the out-of-domain 0.0164); Phase 5 tunes it against the golden set. Note: the first query after a container restart pays a one-off ~10s sentence-transformers model load on the embed step; subsequent queries retrieve in ~15–25ms.
 
 ---
 

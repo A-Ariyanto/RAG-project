@@ -139,6 +139,7 @@ async def hybrid_search(
     top_k: int = DEFAULT_TOP_K,
     pool: int = DEFAULT_POOL,
     rrf_k: int = RRF_K,
+    query_embedding: list[float] | None = None,
 ) -> list[Result]:
     """Fuse vector KNN + FTS with Reciprocal Rank Fusion in one SQL round-trip.
 
@@ -146,10 +147,16 @@ async def hybrid_search(
     the base table, keeps rows either retriever returned, and scores them
     `1/(k+vec_rank) + 1/(k+fts_rank)` with a missing side contributing 0. A single
     query embedding is reused for the vector side and the raw text for the lexical
-    side. `embed_query` is synchronous (torch) — Phase 4 should call it in a
-    threadpool so it doesn't block the event loop.
+    side.
+
+    `embed_query` is synchronous (torch), so it blocks the event loop. Pass a
+    precomputed `query_embedding` (embed it in a threadpool) to keep the async
+    service responsive; omit it and this embeds inline (the Phase 3 probe script's
+    behaviour).
     """
-    qvec = _vector_literal(embed_query(query).tolist())
+    if query_embedding is None:
+        query_embedding = embed_query(query).tolist()
+    qvec = _vector_literal(query_embedding)
     rows = await conn.fetch(
         f"""
         WITH q AS (SELECT {_OR_TSQUERY.replace('$1', '$2')} AS tsq),
