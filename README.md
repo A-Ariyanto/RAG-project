@@ -148,6 +148,7 @@ DeepSeek judges each generated answer against only the retrieved sources:
 
 - [IMPLEMENTATION.md](IMPLEMENTATION.md) — design rationale: requirements, stack decisions, architecture
 - [ROADMAP.md](ROADMAP.md) — trackable phase-by-phase task checklists and current status
+- [docs/WHY-RAG.md](docs/WHY-RAG.md) — why RAG, why this project needed it, pipeline vs agentic RAG, and the landscape of alternatives
 
 ## Progress Report
 
