@@ -138,9 +138,10 @@ Do not touch FastAPI until this works.
 **Stack:** Vite + React + Tailwind, in a `frontend/` directory in this repo (same repo, same deploy story; served same-origin from FastAPI so no CORS config). Minimal now, but the tooling holds up if the UI grows later.
 
 **Tasks**
-- [ ] Scaffold `frontend/` with Vite + React + Tailwind
-- [ ] Single-page chat view consuming the SSE stream
-- [ ] Render citations as links to the source handbook URLs
+- [x] Scaffold `frontend/` with Vite + React + Tailwind (Node 22 pinned via `.nvmrc` — Vite 8/Rolldown needs >=22.12)
+- [x] Single-page chat view consuming the SSE stream (`src/api.ts` parses the meta/token/done events)
+- [x] Render citations as links to the source handbook URLs (inline `[n]` markers + a Sources list)
+- [ ] Verify end-to-end against a running backend (`docker compose up` + `npm run dev`) — ask a question, click a citation through
 - [ ] Serve the built bundle from FastAPI (static files, same origin)
 
 **Exit criterion:** I can ask a question in a browser and click a citation through to the handbook.

@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+
+/* UNSW handbook palette: bright yellow header, black ink, white content. */
+@theme {
+  --color-unsw-yellow: #ffdb00;
+  --color-unsw-yellow-dark: #e5c400;
+  --color-unsw-black: #000000;
+  --color-ink: #1a1a1a;
+  --color-muted: #6b6875;
+  --color-paper: #f6f6f7;
+  --color-line: #e3e2e6;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
