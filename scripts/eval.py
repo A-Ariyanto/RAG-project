@@ -70,6 +70,7 @@ class Item:
     answerable: bool
     gold: list[Gold]
     answer: str
+    phrasing: str | None       # answerable only: "code" | "name"
     refusal_layer: str | None  # unanswerable only: "retrieval" | "generation"
 
 
@@ -85,6 +86,7 @@ def load_golden(path: Path = GOLDEN_PATH) -> list[Item]:
                 answerable=r["answerable"],
                 gold=[Gold(g["doc_code"], g["section_type"]) for g in r.get("gold") or []],
                 answer=r.get("answer", ""),
+                phrasing=r.get("phrasing"),
                 refusal_layer=r.get("refusal_layer"),
             )
         )
@@ -133,19 +135,41 @@ class HitRates:
     n: int
 
 
-def retrieval_report(items: list[Item], retrieved: dict[str, Retrieved]) -> list[HitRates]:
-    answerable = [it for it in items if it.answerable]
-    methods = {"hybrid (fused)": "hybrid", "vector-only": "vector", "fts-only": "fts"}
+METHODS = {"hybrid (fused)": "hybrid", "vector-only": "vector", "fts-only": "fts"}
+
+
+def _hit_rates(subset: list[Item], retrieved: dict[str, Retrieved]) -> list[HitRates]:
     reports: list[HitRates] = []
-    for label, attr in methods.items():
+    for label, attr in METHODS.items():
         hits = {k: 0 for k in HIT_KS}
-        for it in answerable:
+        for it in subset:
             results = getattr(retrieved[it.id], attr)
             for k in HIT_KS:
                 if _hit_rank(results, it.gold, k) is not None:
                     hits[k] += 1
-        reports.append(HitRates(method=label, hits=hits, n=len(answerable)))
+        reports.append(HitRates(method=label, hits=hits, n=len(subset)))
     return reports
+
+
+@dataclass
+class RetrievalReport:
+    overall: list[HitRates]
+    by_phrasing: dict[str, list[HitRates]]  # "code" / "name" -> per-method hit@k
+
+
+def retrieval_report(items: list[Item], retrieved: dict[str, Retrieved]) -> RetrievalReport:
+    """Hit-rate overall and split by phrasing (code-anchored vs name-only).
+
+    The split is the crux of the whole project: FTS is strong on code-anchored
+    questions and weak on name-only ones, vector is the mirror image, and hybrid
+    should stay strong on both — that robustness is what justifies fusion.
+    """
+    answerable = [it for it in items if it.answerable]
+    by_phrasing = {
+        phrasing: _hit_rates([it for it in answerable if it.phrasing == phrasing], retrieved)
+        for phrasing in ("code", "name")
+    }
+    return RetrievalReport(overall=_hit_rates(answerable, retrieved), by_phrasing=by_phrasing)
 
 
 # --- 2. refusal threshold sweep ----------------------------------------------
@@ -202,13 +226,16 @@ def threshold_sweep(items: list[Item], retrieved: dict[str, Retrieved]) -> Sweep
         return SweepRow(t, answered, refused, acc)
 
     rows = [score_at(t) for t in candidates]
-    # Best balanced accuracy; tie-break to the widest separating gap (most robust).
+    # Best balanced accuracy; tie-break to the higher threshold (fewer false answers).
     best = max(rows, key=lambda r: (r.balanced_acc, r.threshold))
 
-    # A compact, human-readable grid spanning the interesting range for display.
-    lo, hi = min(all_scores), max(all_scores)
-    grid_ts = [round(lo + (hi - lo) * f, 4) for f in (0.0, 0.25, 0.5, 0.75, 1.0)]
-    grid = [score_at(t) for t in sorted(set(grid_ts))]
+    # Display grid: sample candidate thresholds evenly *by index*, not by value —
+    # RRF scores cluster tightly (both retrievers #1 -> 2/61), so value-even
+    # sampling steps over the decision boundary. Always include the optimum.
+    n_show = min(7, len(candidates))
+    idxs = sorted({round(i * (len(candidates) - 1) / (n_show - 1)) for i in range(n_show)})
+    grid_ts = sorted({candidates[i] for i in idxs} | {best.threshold})
+    grid = [score_at(t) for t in grid_ts]
 
     return SweepReport(rows=rows, best=best, n_answerable=n_ans, n_offcorpus=n_neg, grid=grid)
 
