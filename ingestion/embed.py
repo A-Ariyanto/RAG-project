@@ -20,6 +20,11 @@ from functools import lru_cache
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
 EMBED_DIM = 384
 
+# bge models are trained with an asymmetric instruction: the *query* is prefixed
+# with this sentence, stored passages are not. Applying it lifts retrieval
+# quality noticeably, so the query path (Phase 3/4) must use `embed_query`.
+QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: "
+
 # Keep the HuggingFace cache inside the repo (mounted volume) so the ~130MB
 # model download survives container restarts and isn't re-fetched every run.
 _CACHE_DIR = os.environ.get("MODELS_DIR", "models")
@@ -50,4 +55,19 @@ def embed_texts(texts: list[str], *, batch_size: int = 64):
         normalize_embeddings=True,
         convert_to_numpy=True,
         show_progress_bar=True,
+    ).astype("float32")
+
+
+def embed_query(text: str):
+    """Embed a single search query → a (384,) float32 numpy vector, L2-normalised.
+
+    Applies the bge query instruction prefix (see `QUERY_INSTRUCTION`) that the
+    stored passages deliberately omit. Progress bar suppressed — this is the
+    single-vector, latency-sensitive query path, not a batch ingest.
+    """
+    return _model().encode(
+        QUERY_INSTRUCTION + text,
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+        show_progress_bar=False,
     ).astype("float32")
