@@ -142,10 +142,12 @@ async def hybrid_search(
 ) -> list[Result]:
     """Fuse vector KNN + FTS with Reciprocal Rank Fusion in one SQL round-trip.
 
-    Both CTEs rank their own candidate pool; the outer query FULL-joins them on
-    chunk id and scores each surviving row `1/(k+vec_rank) + 1/(k+fts_rank)`,
-    with a missing side contributing 0. A single query embedding is reused for
-    the vector side and the raw text for the lexical side.
+    Both CTEs rank their own candidate pool; the outer query LEFT-joins each onto
+    the base table, keeps rows either retriever returned, and scores them
+    `1/(k+vec_rank) + 1/(k+fts_rank)` with a missing side contributing 0. A single
+    query embedding is reused for the vector side and the raw text for the lexical
+    side. `embed_query` is synchronous (torch) — Phase 4 should call it in a
+    threadpool so it doesn't block the event loop.
     """
     qvec = _vector_literal(embed_query(query).tolist())
     rows = await conn.fetch(
