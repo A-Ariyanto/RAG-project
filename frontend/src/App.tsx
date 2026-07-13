@@ -52,6 +52,14 @@ function App() {
     })
   }
 
+  const restart = () => {
+    cancelRef.current?.()
+    cancelRef.current = null
+    setMessages([])
+    setInput('')
+    setStreaming(false)
+  }
+
   const submit = (question: string) => {
     const q = question.trim()
     if (!q || streaming) return
@@ -84,13 +92,24 @@ function App() {
   return (
     <div className="flex h-full flex-col">
       <header className="bg-unsw-yellow border-b border-unsw-black/10">
-        <div className="mx-auto max-w-3xl px-4 py-4">
-          <h1 className="text-xl font-extrabold tracking-tight text-unsw-black">
-            UNSW Handbook Assistant
-          </h1>
-          <p className="text-sm font-medium text-unsw-black/70">
-            Grounded answers to CSE course &amp; enrolment questions, with citations.
-          </p>
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4">
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-unsw-black">
+              UNSW Handbook Assistant
+            </h1>
+            <p className="text-sm font-medium text-unsw-black/70">
+              Grounded answers to CSE course &amp; enrolment questions, with citations.
+            </p>
+          </div>
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={restart}
+              className="shrink-0 rounded-lg border border-unsw-black/30 px-3 py-1.5 text-sm font-semibold text-unsw-black transition hover:bg-unsw-black hover:text-white"
+            >
+              New chat
+            </button>
+          )}
         </div>
       </header>
 
