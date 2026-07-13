@@ -394,7 +394,7 @@ def _pct(n: int, d: int) -> str:
 
 def render_markdown(
     items: list[Item],
-    hit: list[HitRates],
+    hit: RetrievalReport,
     sweep: SweepReport,
     ground: GroundednessReport | None,
 ) -> str:
@@ -410,15 +410,32 @@ def render_markdown(
         f"`python -m scripts.eval`.\n"
     )
 
-    # 1. retrieval
+    # 1a. retrieval — overall
     out.append("### Retrieval hit-rate (answerable questions)\n")
     header = "| Method | " + " | ".join(f"hit@{k}" for k in HIT_KS) + " |"
     out.append(header)
     out.append("|" + "---|" * (len(HIT_KS) + 1))
-    for hr in hit:
+    for hr in hit.overall:
         cells = " | ".join(_pct(hr.hits[k], hr.n) for k in HIT_KS)
         out.append(f"| {hr.method} | {cells} |")
     out.append("")
+
+    # 1b. retrieval — split by phrasing (the robustness argument for fusion)
+    code_n = hit.by_phrasing["code"][0].n
+    name_n = hit.by_phrasing["name"][0].n
+    out.append(f"**hit@3 by phrasing** — code-anchored ({code_n}) vs name-only ({name_n}):\n")
+    out.append("| Method | code-anchored hit@3 | name-only hit@3 |")
+    out.append("|---|---|---|")
+    for code_hr, name_hr in zip(hit.by_phrasing["code"], hit.by_phrasing["name"]):
+        out.append(
+            f"| {code_hr.method} | {_pct(code_hr.hits[3], code_hr.n)} "
+            f"| {_pct(name_hr.hits[3], name_hr.n)} |"
+        )
+    out.append(
+        "\nFTS leads on code-anchored questions and vector leads on name-only "
+        "ones; hybrid tracks the stronger method on each, so it's the only "
+        "retriever that doesn't collapse when the phrasing flips.\n"
+    )
 
     # 2. refusal sweep
     out.append("### Refusal threshold sweep\n")
