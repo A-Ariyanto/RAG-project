@@ -15,3 +15,9 @@ requests>=2.31
 # (prompt building, cost, refusal, SSE framing), not the network or the ASGI app.
 asyncpg>=0.30
 httpx>=0.27
+
+# Phase 5 — the eval's pure scoring logic (hit@k, threshold sweep, fusion
+# diagnostics, golden-set parsing) is unit-tested in CI via tests/test_eval.py,
+# which imports scripts.eval and loads eval/golden.yaml. The full eval *run* (DB
+# + embeddings + DeepSeek judge) stays manual; only its metric math runs in CI.
+pyyaml>=6.0

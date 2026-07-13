@@ -18,3 +18,7 @@ requests>=2.31
 # directly by ingestion/embed.py.
 sentence-transformers>=3.0
 numpy>=1.26
+
+# Phase 5 — evaluation (scripts/eval.py). The golden set is hand-edited YAML;
+# the eval runs locally (not in CI), so this lives here, not in requirements-test.
+pyyaml>=6.0
