@@ -1,9 +1,14 @@
-# Phase 0 + 1 + 2 dependencies. Later phases (FastAPI, SQLAlchemy) add their own
-# deps as they land, per the roadmap.
+# Phase 0 + 1 + 2 dependencies. Later phases add their own deps as they land.
 asyncpg>=0.30
 pydantic>=2.0
 pydantic-settings>=2.0
 pytest>=8.0
+
+# Phase 4 — service (app/). FastAPI + uvicorn serve the streaming /ask endpoint;
+# httpx is the async HTTP client that streams tokens from the DeepSeek API.
+fastapi>=0.115
+uvicorn[standard]>=0.30
+httpx>=0.27
 
 # Phase 1 — corpus scraper (ingestion/)
 requests>=2.31
