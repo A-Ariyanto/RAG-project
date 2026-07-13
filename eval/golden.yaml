@@ -16,6 +16,11 @@
 #   question      — the user question, as a student would phrase it
 #   shape         — prerequisite | offering | uoc | exclusion | equivalent
 #                   | corequisite | unanswerable  (which capability it exercises)
+#   phrasing      — answerable only. code: the question names the course by its
+#                   code (favours lexical/FTS). name: by course name/paraphrase
+#                   only, no code (favours semantic/vector). The retrieval report
+#                   splits hit-rate on this — it's the evidence that hybrid is
+#                   robust to phrasing where each single method is not.
 #   answerable    — true: a grounded answer exists; false: correct behavior is refusal
 #   gold          — list of (doc_code, section_type) chunks that contain the answer
 #                   (empty for unanswerable)
@@ -37,6 +42,7 @@
 - id: prereq-comp3311
   question: "What are the prerequisites for COMP3311?"
   shape: prerequisite
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP3311, section_type: enrolment_conditions }
@@ -45,14 +51,16 @@
 - id: prereq-comp1531
   question: "What do I need to have done before enrolling in COMP1531?"
   shape: prerequisite
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP1531, section_type: enrolment_conditions }
   answer: "COMP1511 or DPST1091 or COMP1917 or COMP1921."
 
 - id: prereq-comp3231
-  question: "What are the prerequisites for Operating Systems (COMP3231)?"
+  question: "What are the prerequisites for COMP3231?"
   shape: prerequisite
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP3231, section_type: enrolment_conditions }
@@ -61,6 +69,7 @@
 - id: prereq-comp3821-minmark
   question: "What marks do I need to get into COMP3821?"
   shape: prerequisite
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP3821, section_type: enrolment_conditions }
@@ -69,18 +78,38 @@
 - id: prereq-comp3900-project
   question: "What are the enrolment requirements for the Computer Science Project COMP3900?"
   shape: prerequisite
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP3900, section_type: enrolment_conditions }
   answer: "COMP1531, and COMP2521 or COMP1927, and enrolment in a BSc Computer Science major or Advanced Computer Science Honours major with 102 UOC completed."
 
-- id: prereq-comp3331-name
+- id: prereq-dbsystems-name
   question: "Before I can take Database Systems, what do I need to have finished?"
   shape: prerequisite
+  phrasing: name
   answerable: true
   gold:
     - { doc_code: COMP3311, section_type: enrolment_conditions }
-  answer: "COMP2521 or COMP1927 (this is the prerequisite for COMP3311 Database Systems). Referenced by course name, not code — the vector side must bridge name->code."
+  answer: "COMP2521 or COMP1927 (the prerequisite for COMP3311 Database Systems). Referenced by course name, not code — the vector side must bridge name->code."
+
+- id: prereq-networks-name
+  question: "What do I need to complete before enrolling in Computer Networks and Applications?"
+  shape: prerequisite
+  phrasing: name
+  answerable: true
+  gold:
+    - { doc_code: COMP3331, section_type: enrolment_conditions }
+  answer: "COMP1927 or COMP2521 or MTRN2500 (the prerequisite for COMP3331)."
+
+- id: prereq-os-name
+  question: "What are the prerequisites for the Operating Systems course?"
+  shape: prerequisite
+  phrasing: name
+  answerable: true
+  gold:
+    - { doc_code: COMP3231, section_type: enrolment_conditions }
+  answer: "(COMP1521 or DPST1092 or COMP2121 or ELEC2142) and (COMP2521 or COMP1927) — for COMP3231 Operating Systems."
 
 # =============================================================================
 # Answerable — term offerings
@@ -88,14 +117,16 @@
 - id: offer-comp3311-terms
   question: "In which terms is COMP3311 offered?"
   shape: offering
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP3311, section_type: offering }
   answer: "T1 and T2."
 
 - id: offer-comp2521-summer
-  question: "Is Data Structures and Algorithms (COMP2521) offered in the summer term?"
+  question: "Is COMP2521 offered in the summer term?"
   shape: offering
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP2521, section_type: offering }
@@ -104,26 +135,47 @@
 - id: offer-comp3231-t2only
   question: "When can I take COMP3231?"
   shape: offering
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP3231, section_type: offering }
   answer: "T2 only."
 
-- id: offer-comp3821-t3only
+- id: offer-algorithms-name
   question: "Which term is Extended Algorithm Design and Analysis offered in?"
   shape: offering
+  phrasing: name
   answerable: true
   gold:
     - { doc_code: COMP3821, section_type: offering }
-  answer: "T3 only."
+  answer: "T3 only (COMP3821)."
 
-- id: offer-comp3900-capstone-t3
+- id: offer-capstone-name
   question: "Is the computer science capstone project available in term 3?"
   shape: offering
+  phrasing: name
   answerable: true
   gold:
     - { doc_code: COMP3900, section_type: offering }
   answer: "Yes — COMP3900 is offered in T1, T2, and T3, so T3 is available. ('capstone' does not appear in the text — pure semantic match to 'Project'.)"
+
+- id: offer-progfund-name
+  question: "In which terms is Programming Fundamentals offered?"
+  shape: offering
+  phrasing: name
+  answerable: true
+  gold:
+    - { doc_code: COMP1511, section_type: offering }
+  answer: "T1, T2, and T3 (COMP1511)."
+
+- id: offer-reasoning-name
+  question: "When is the Workshop on Reasoning about Programs offered?"
+  shape: offering
+  phrasing: name
+  answerable: true
+  gold:
+    - { doc_code: SENG2011, section_type: offering }
+  answer: "T3 only (SENG2011)."
 
 # =============================================================================
 # Answerable — units of credit (UOC)
@@ -131,26 +183,38 @@
 - id: uoc-comp1531
   question: "How many units of credit is COMP1531 worth?"
   shape: uoc
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP1531, section_type: offering }
   answer: "6 units of credit."
 
-- id: uoc-comp3900
-  question: "How many UOC is the Computer Science Project?"
-  shape: uoc
-  answerable: true
-  gold:
-    - { doc_code: COMP3900, section_type: offering }
-  answer: "6 units of credit."
-
 - id: uoc-comp9417
-  question: "What are the credit points for COMP9417 Machine Learning?"
+  question: "What are the credit points for COMP9417?"
   shape: uoc
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP9417, section_type: offering }
   answer: "6 units of credit."
+
+- id: uoc-project-name
+  question: "How many UOC is the Computer Science Project?"
+  shape: uoc
+  phrasing: name
+  answerable: true
+  gold:
+    - { doc_code: COMP3900, section_type: offering }
+  answer: "6 units of credit (COMP3900)."
+
+- id: uoc-datastructures-name
+  question: "How many units of credit is Data Structures and Algorithms worth?"
+  shape: uoc
+  phrasing: name
+  answerable: true
+  gold:
+    - { doc_code: COMP2521, section_type: offering }
+  answer: "6 units of credit (COMP2521)."
 
 # =============================================================================
 # Answerable — exclusions
@@ -158,6 +222,7 @@
 - id: excl-comp2521-1927
   question: "Can I enrol in COMP2521 if I've already done COMP1927?"
   shape: exclusion
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP2521, section_type: enrolment_conditions }
@@ -166,26 +231,38 @@
 - id: excl-comp1511-1911
   question: "What is the exclusion course for COMP1511?"
   shape: exclusion
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP1511, section_type: enrolment_conditions }
   answer: "COMP1911 (Computing 1A)."
 
-- id: excl-comp9032-name
+- id: excl-comp3311
+  question: "What are the exclusions for COMP3311?"
+  shape: exclusion
+  phrasing: code
+  answerable: true
+  gold:
+    - { doc_code: COMP3311, section_type: enrolment_conditions }
+  answer: "INFS1603 (Introduction to Business Databases), INFS5992 (Data Management), and COMP9311 (Database Systems)."
+
+- id: excl-microprocessors-name
   question: "Which course is excluded if I enrol in Microprocessors and Interfacing?"
   shape: exclusion
+  phrasing: name
   answerable: true
   gold:
     - { doc_code: COMP9032, section_type: enrolment_conditions }
   answer: "COMP9282 (Extended Microprocessors and Interfacing) is the exclusion for COMP9032."
 
-- id: excl-comp3311
-  question: "What are the exclusions for the Database Systems course COMP3311?"
+- id: excl-advancedcpp-name
+  question: "What is the exclusion for Advanced C++ Programming?"
   shape: exclusion
+  phrasing: name
   answerable: true
   gold:
-    - { doc_code: COMP3311, section_type: enrolment_conditions }
-  answer: "INFS1603 (Introduction to Business Databases), INFS5992 (Data Management), and COMP9311 (Database Systems)."
+    - { doc_code: COMP6771, section_type: enrolment_conditions }
+  answer: "COMP3171 and COMP9171 (both Object-Oriented Programming) are exclusions for COMP6771."
 
 # =============================================================================
 # Answerable — equivalents
@@ -193,26 +270,29 @@
 - id: equiv-comp3231
   question: "Which courses is COMP3231 equivalent to?"
   shape: equivalent
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP3231, section_type: enrolment_conditions }
   answer: "COMP9283 (Extended Operating Systems), COMP3891 (Extended Operating Systems), and COMP9201 (Operating Systems)."
 
-- id: equiv-comp1531
-  question: "Is there an equivalent course to COMP1531?"
-  shape: equivalent
-  answerable: true
-  gold:
-    - { doc_code: COMP1531, section_type: enrolment_conditions }
-  answer: "DPST1093 (Software Engineering Fundamentals)."
-
 - id: equiv-comp1521
   question: "What is COMP1521 equivalent to?"
   shape: equivalent
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP1521, section_type: enrolment_conditions }
   answer: "DPST1092 (Computer Systems Fundamentals)."
+
+- id: equiv-sweng-name
+  question: "Is there a course equivalent to Software Engineering Fundamentals?"
+  shape: equivalent
+  phrasing: name
+  answerable: true
+  gold:
+    - { doc_code: COMP1531, section_type: enrolment_conditions }
+  answer: "DPST1093 (Software Engineering Fundamentals) is equivalent to COMP1531."
 
 # =============================================================================
 # Answerable — corequisites
@@ -220,6 +300,7 @@
 - id: coreq-comp9032
   question: "Does COMP9032 have any corequisites?"
   shape: corequisite
+  phrasing: code
   answerable: true
   gold:
     - { doc_code: COMP9032, section_type: enrolment_conditions }
