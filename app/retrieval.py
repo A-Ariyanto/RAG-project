@@ -159,10 +159,10 @@ async def hybrid_search(
             LIMIT $3
         ),
         fts AS (
-            SELECT c.id, RANK() OVER (ORDER BY ts_rank(c.tsv, q.tsq) DESC) AS rank
+            SELECT c.id, RANK() OVER (ORDER BY ts_rank(c.tsv, q.tsq, {_TS_NORM}) DESC) AS rank
             FROM chunks c, q
             WHERE c.tsv @@ q.tsq
-            ORDER BY ts_rank(c.tsv, q.tsq) DESC
+            ORDER BY ts_rank(c.tsv, q.tsq, {_TS_NORM}) DESC
             LIMIT $3
         )
         SELECT c.id, c.doc_code, c.section_type, c.title, c.text, c.source_url,
