@@ -20,7 +20,7 @@ This file is the **working tracker**: what to build, in what order, and what's d
 | [1 — Corpus acquisition](#phase-1--corpus-acquisition) | ~300 raw handbook documents on disk | ✅ |
 | [2 — Chunking + ingestion](#phase-2--chunking--ingestion) | Populated chunks table with embeddings + tsvector | ✅ |
 | [3 — Hybrid retrieval](#phase-3--hybrid-retrieval-the-centerpiece) | The RRF SQL query, proven better than either method alone | ✅ |
-| [4 — Service](#phase-4--service) | Streaming `/ask` endpoint with citations, refusal, and query logging | 🔨 |
+| [4 — Service](#phase-4--service) | Streaming `/ask` endpoint with citations, refusal, and query logging | ✅ |
 | [5 — Evaluation](#phase-5--evaluation) | Golden set + eval script running in CI, numbers in the README | 🔲 |
 | [6 — Minimal frontend](#phase-6--minimal-frontend) | Browser chat view with clickable citations | 🔲 |
 | [7 — Deployment](#phase-7--deployment) | Public URL on Cloud Run + finished README | 🔲 |
@@ -107,7 +107,7 @@ Do not touch FastAPI until this works.
 - [x] SSE streaming via `StreamingResponse` (`meta` → `token` → `done` events)
 - [x] `query_logs` table + logging (`app/db.py`): latency split (retrieval vs generation), token counts, dollar cost, retrieved chunk IDs — one row per request, refusals included
 
-**Exit criterion:** `curl -N localhost:8000/ask` streams a grounded, citation-marked answer; refusals return nearest matches; every query lands a row in query_logs. *Implementation complete. Verified so far: 36 unit tests green; the real ASGI `/ask` route streams the meta→token→done sequence (fake provider); and a live run inside the app container against the **real** DB confirmed real embedding + hybrid retrieval + `query_logs` writes, plus the refusal split — the answerable "terms is COMP3311 offered?" streamed (top score 0.031) while "capital of France" refused with nearest matches (0.0164), which prompted bumping the placeholder `refusal_threshold` to 0.02. Remaining before ✅: rebuild the app image for the new deps (fastapi/uvicorn/httpx), then the live `curl -N` end-to-end with a funded `DEEPSEEK_API_KEY` to exercise the actual DeepSeek generation call.*
+**Exit criterion:** ✅ `curl -N localhost:8000/ask` streams a grounded, citation-marked answer; refusals return nearest matches; every query lands a row in query_logs. Verified end-to-end against the real stack: "In which terms is COMP3311 offered?" streamed token-by-token to `COMP3311 is offered in T1 and T2 [1].` with the `[1]` marker mapped to the COMP3311 offering source (top fused score 0.031); "What is the capital of France?" refused with the five nearest matches (0.0164 < 0.02 threshold); both wrote query_logs rows (the answered one: retrieval + generation split, 438+14 tokens, ~$0.00013 on deepseek-chat). 36 unit tests green. Placeholder `refusal_threshold` set to 0.02 (sits in the observed gap between in-domain ~0.031 and the out-of-domain 0.0164); Phase 5 tunes it against the golden set. Note: the first query after a container restart pays a one-off ~10s sentence-transformers model load on the embed step; subsequent queries retrieve in ~15–25ms.
 
 ---
 
