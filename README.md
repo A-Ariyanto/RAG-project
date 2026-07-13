@@ -43,6 +43,22 @@ Run the tests inside the app container:
 docker compose exec app python -m pytest tests/
 ```
 
+## Building the corpus (ingestion pipeline)
+
+Two steps, both rerunnable and both run in the app container:
+
+```bash
+# 1. Scrape the COMP/SENG corpus to data/raw/ (polite, rate-limited, resumable)
+docker compose exec app python -m ingestion.scrape --year 2026
+
+# 2. Chunk + embed + load into the `chunks` table (idempotent: rerun = refresh)
+docker compose exec app python -m ingestion.ingest
+```
+
+The first ingest downloads the local embedding model (`bge-small-en-v1.5`,
+~130 MB) into `models/` (gitignored); later runs reuse it. `data/` and `models/`
+are local-only, so a fresh clone reproduces both from these two commands.
+
 ## Repo layout
 
 | Path | Purpose |
@@ -71,3 +87,7 @@ docker compose exec app python -m pytest tests/
 12/07/2026 - Phase 1 (Corpus acquisition) scraper: sitemap-based discovery of the COMP/SENG course + specialisation corpus (~216 docs) and a polite, cache-to-disk scraper extracting each page's `__NEXT_DATA__` payload.
 
 12/07/2026 - Added GitHub Actions CI (tests + Docker image build) running on pushes to main and all pull requests. Deploy (CD) and eval jobs are deferred to Phases 7 and 5 per the roadmap.
+
+12/07/2026 - Completed Phase 1 (Corpus acquisition): scraped 216 COMP/SENG course + specialisation documents (0 failures) into `data/raw/`, rerunnable without re-scraping.
+
+12/07/2026 - Phase 2 (Chunking + ingestion): structure-aware chunker splitting each document by section semantics (overview / enrolment conditions / offering / learning outcomes / structure), an enrolment-rule parser extracting rule type + referenced course codes, local `bge-small-en-v1.5` embeddings, and an idempotent ingest into a `chunks` table with a `vector(384)` column and a generated `tsvector` (GIN-indexed) — the substrate for Phase 3 hybrid retrieval.
