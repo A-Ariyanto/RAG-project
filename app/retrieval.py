@@ -39,6 +39,18 @@ RRF_K = 60
 DEFAULT_POOL = 50
 DEFAULT_TOP_K = 10
 
+# The lexical half's tsquery. `plainto_tsquery` ANDs every content word, so a
+# single extra word in a natural-language question ("Can I enrol in COMP2521 if
+# I've already done COMP1927?") drops every row missing any one of them and FTS
+# returns nothing. Rewriting the '&' operators to '|' turns it into a recall-
+# oriented OR query: any term may match, `ts_rank` still orders by how many and
+# how strongly terms hit, and RRF supplies the precision. Crucially this lets a
+# bare course code (comp9201, comp1927) pull its exact chunk into the pool — the
+# lexical strength vector search lacks. plainto emits only single-lexeme ANDs
+# (no phrase `<->`), so the text-level '&'→'|' swap is safe. `$1` is rebound per
+# query via .replace() where the query-text parameter sits at a different index.
+_OR_TSQUERY = "replace(plainto_tsquery('english', $1)::text, '&', '|')::tsquery"
+
 
 @dataclass
 class Result:
@@ -98,11 +110,12 @@ async def fts_search(
 ) -> list[Result]:
     """Full-text-only baseline. `score` is `ts_rank`; empty if nothing matches."""
     rows = await conn.fetch(
-        """
+        f"""
+        WITH q AS (SELECT {_OR_TSQUERY} AS tsq)
         SELECT id, doc_code, section_type, title, text, source_url,
-               ts_rank(tsv, q) AS score
-        FROM chunks, plainto_tsquery('english', $1) q
-        WHERE tsv @@ q
+               ts_rank(tsv, q.tsq) AS score
+        FROM chunks, q
+        WHERE tsv @@ q.tsq
         ORDER BY score DESC, id
         LIMIT $2
         """,
@@ -129,8 +142,9 @@ async def hybrid_search(
     """
     qvec = _vector_literal(embed_query(query).tolist())
     rows = await conn.fetch(
-        """
-        WITH vec AS (
+        f"""
+        WITH q AS (SELECT {_OR_TSQUERY.replace('$1', '$2')} AS tsq),
+        vec AS (
             SELECT id, RANK() OVER (ORDER BY embedding <=> $1::vector) AS rank
             FROM chunks
             WHERE embedding IS NOT NULL
@@ -138,10 +152,10 @@ async def hybrid_search(
             LIMIT $3
         ),
         fts AS (
-            SELECT id, RANK() OVER (ORDER BY ts_rank(tsv, q) DESC) AS rank
-            FROM chunks, plainto_tsquery('english', $2) q
-            WHERE tsv @@ q
-            ORDER BY ts_rank(tsv, q) DESC
+            SELECT c.id, RANK() OVER (ORDER BY ts_rank(c.tsv, q.tsq) DESC) AS rank
+            FROM chunks c, q
+            WHERE c.tsv @@ q.tsq
+            ORDER BY ts_rank(c.tsv, q.tsq) DESC
             LIMIT $3
         )
         SELECT c.id, c.doc_code, c.section_type, c.title, c.text, c.source_url,
