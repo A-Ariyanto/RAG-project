@@ -1,0 +1,283 @@
+# Golden evaluation set — UNSW Handbook RAG (Phase 5).
+#
+# ~30 hand-verifiable Q&A pairs that produce the project's headline numbers:
+# retrieval hit-rate, answer groundedness, and refusal accuracy. LLM-drafted,
+# then every pair hand-checked against the live handbook pages (source_url of the
+# gold chunk) — this file is only trustworthy once each `answer` below has been
+# confirmed against source, so treat verification as part of the deliverable.
+#
+# Gold chunks are keyed by the STABLE (doc_code, section_type) pair, not the
+# BIGSERIAL `chunks.id` — ids churn on every re-ingest (per-doc delete+insert),
+# so an id-based gold set would rot. (doc_code, section_type) is what the Phase 3
+# probe harness already matches on, and it's what a human can eyeball on the page.
+#
+# Fields per item:
+#   id            — stable slug, used in eval output
+#   question      — the user question, as a student would phrase it
+#   shape         — prerequisite | offering | uoc | exclusion | equivalent
+#                   | corequisite | unanswerable  (which capability it exercises)
+#   answerable    — true: a grounded answer exists; false: correct behavior is refusal
+#   gold          — list of (doc_code, section_type) chunks that contain the answer
+#                   (empty for unanswerable)
+#   answer        — short reference answer, for human verification and as context
+#                   for the LLM-as-judge; for unanswerable, why it's out of scope
+#   refusal_layer — unanswerable only. Which layer should catch it:
+#                     retrieval  — off-corpus, top RRF score should fall below the
+#                                  refusal threshold (this is what the sweep tunes)
+#                     generation — names a real course but the attribute isn't in
+#                                  the corpus; retrieval finds the course, so only
+#                                  the citation-enforcing prompt can decline it
+#
+# Facts below were confirmed against the ingested chunks on 2026-07-13; re-confirm
+# against the handbook if the corpus is re-scraped.
+
+# =============================================================================
+# Answerable — prerequisites
+# =============================================================================
+- id: prereq-comp3311
+  question: "What are the prerequisites for COMP3311?"
+  shape: prerequisite
+  answerable: true
+  gold:
+    - { doc_code: COMP3311, section_type: enrolment_conditions }
+  answer: "COMP2521 or COMP1927."
+
+- id: prereq-comp1531
+  question: "What do I need to have done before enrolling in COMP1531?"
+  shape: prerequisite
+  answerable: true
+  gold:
+    - { doc_code: COMP1531, section_type: enrolment_conditions }
+  answer: "COMP1511 or DPST1091 or COMP1917 or COMP1921."
+
+- id: prereq-comp3231
+  question: "What are the prerequisites for Operating Systems (COMP3231)?"
+  shape: prerequisite
+  answerable: true
+  gold:
+    - { doc_code: COMP3231, section_type: enrolment_conditions }
+  answer: "(COMP1521 or DPST1092 or COMP2121 or ELEC2142) and (COMP2521 or COMP1927)."
+
+- id: prereq-comp3821-minmark
+  question: "What marks do I need to get into COMP3821?"
+  shape: prerequisite
+  answerable: true
+  gold:
+    - { doc_code: COMP3821, section_type: enrolment_conditions }
+  answer: "A minimum mark of 70 in COMP1927 or COMP2521, and a minimum mark of 70 in MATH1081 (or enrolment in program 3785)."
+
+- id: prereq-comp3900-project
+  question: "What are the enrolment requirements for the Computer Science Project COMP3900?"
+  shape: prerequisite
+  answerable: true
+  gold:
+    - { doc_code: COMP3900, section_type: enrolment_conditions }
+  answer: "COMP1531, and COMP2521 or COMP1927, and enrolment in a BSc Computer Science major or Advanced Computer Science Honours major with 102 UOC completed."
+
+- id: prereq-comp3331-name
+  question: "Before I can take Database Systems, what do I need to have finished?"
+  shape: prerequisite
+  answerable: true
+  gold:
+    - { doc_code: COMP3311, section_type: enrolment_conditions }
+  answer: "COMP2521 or COMP1927 (this is the prerequisite for COMP3311 Database Systems). Referenced by course name, not code — the vector side must bridge name->code."
+
+# =============================================================================
+# Answerable — term offerings
+# =============================================================================
+- id: offer-comp3311-terms
+  question: "In which terms is COMP3311 offered?"
+  shape: offering
+  answerable: true
+  gold:
+    - { doc_code: COMP3311, section_type: offering }
+  answer: "T1 and T2."
+
+- id: offer-comp2521-summer
+  question: "Is Data Structures and Algorithms (COMP2521) offered in the summer term?"
+  shape: offering
+  answerable: true
+  gold:
+    - { doc_code: COMP2521, section_type: offering }
+  answer: "Yes — COMP2521 is offered in Summer, T1, T2, and T3."
+
+- id: offer-comp3231-t2only
+  question: "When can I take COMP3231?"
+  shape: offering
+  answerable: true
+  gold:
+    - { doc_code: COMP3231, section_type: offering }
+  answer: "T2 only."
+
+- id: offer-comp3821-t3only
+  question: "Which term is Extended Algorithm Design and Analysis offered in?"
+  shape: offering
+  answerable: true
+  gold:
+    - { doc_code: COMP3821, section_type: offering }
+  answer: "T3 only."
+
+- id: offer-comp3900-capstone-t3
+  question: "Is the computer science capstone project available in term 3?"
+  shape: offering
+  answerable: true
+  gold:
+    - { doc_code: COMP3900, section_type: offering }
+  answer: "Yes — COMP3900 is offered in T1, T2, and T3, so T3 is available. ('capstone' does not appear in the text — pure semantic match to 'Project'.)"
+
+# =============================================================================
+# Answerable — units of credit (UOC)
+# =============================================================================
+- id: uoc-comp1531
+  question: "How many units of credit is COMP1531 worth?"
+  shape: uoc
+  answerable: true
+  gold:
+    - { doc_code: COMP1531, section_type: offering }
+  answer: "6 units of credit."
+
+- id: uoc-comp3900
+  question: "How many UOC is the Computer Science Project?"
+  shape: uoc
+  answerable: true
+  gold:
+    - { doc_code: COMP3900, section_type: offering }
+  answer: "6 units of credit."
+
+- id: uoc-comp9417
+  question: "What are the credit points for COMP9417 Machine Learning?"
+  shape: uoc
+  answerable: true
+  gold:
+    - { doc_code: COMP9417, section_type: offering }
+  answer: "6 units of credit."
+
+# =============================================================================
+# Answerable — exclusions
+# =============================================================================
+- id: excl-comp2521-1927
+  question: "Can I enrol in COMP2521 if I've already done COMP1927?"
+  shape: exclusion
+  answerable: true
+  gold:
+    - { doc_code: COMP2521, section_type: enrolment_conditions }
+  answer: "No — COMP1927 (Computing 2) is an exclusion for COMP2521, so you can't count both."
+
+- id: excl-comp1511-1911
+  question: "What is the exclusion course for COMP1511?"
+  shape: exclusion
+  answerable: true
+  gold:
+    - { doc_code: COMP1511, section_type: enrolment_conditions }
+  answer: "COMP1911 (Computing 1A)."
+
+- id: excl-comp9032-name
+  question: "Which course is excluded if I enrol in Microprocessors and Interfacing?"
+  shape: exclusion
+  answerable: true
+  gold:
+    - { doc_code: COMP9032, section_type: enrolment_conditions }
+  answer: "COMP9282 (Extended Microprocessors and Interfacing) is the exclusion for COMP9032."
+
+- id: excl-comp3311
+  question: "What are the exclusions for the Database Systems course COMP3311?"
+  shape: exclusion
+  answerable: true
+  gold:
+    - { doc_code: COMP3311, section_type: enrolment_conditions }
+  answer: "INFS1603 (Introduction to Business Databases), INFS5992 (Data Management), and COMP9311 (Database Systems)."
+
+# =============================================================================
+# Answerable — equivalents
+# =============================================================================
+- id: equiv-comp3231
+  question: "Which courses is COMP3231 equivalent to?"
+  shape: equivalent
+  answerable: true
+  gold:
+    - { doc_code: COMP3231, section_type: enrolment_conditions }
+  answer: "COMP9283 (Extended Operating Systems), COMP3891 (Extended Operating Systems), and COMP9201 (Operating Systems)."
+
+- id: equiv-comp1531
+  question: "Is there an equivalent course to COMP1531?"
+  shape: equivalent
+  answerable: true
+  gold:
+    - { doc_code: COMP1531, section_type: enrolment_conditions }
+  answer: "DPST1093 (Software Engineering Fundamentals)."
+
+- id: equiv-comp1521
+  question: "What is COMP1521 equivalent to?"
+  shape: equivalent
+  answerable: true
+  gold:
+    - { doc_code: COMP1521, section_type: enrolment_conditions }
+  answer: "DPST1092 (Computer Systems Fundamentals)."
+
+# =============================================================================
+# Answerable — corequisites
+# =============================================================================
+- id: coreq-comp9032
+  question: "Does COMP9032 have any corequisites?"
+  shape: corequisite
+  answerable: true
+  gold:
+    - { doc_code: COMP9032, section_type: enrolment_conditions }
+  answer: "Yes — COMP9021 is a corequisite for COMP9032."
+
+# =============================================================================
+# Unanswerable — correct behavior is refusal
+# =============================================================================
+# Off-corpus: no course anchors, top RRF score should sit below the refusal
+# threshold. These are what the threshold sweep tunes against.
+- id: unans-capital-france
+  question: "What is the capital of France?"
+  shape: unanswerable
+  answerable: false
+  gold: []
+  refusal_layer: retrieval
+  answer: "Out of scope — general knowledge, nothing to do with the UNSW Handbook corpus."
+
+- id: unans-student-visa
+  question: "How do I apply for a student visa to study in Australia?"
+  shape: unanswerable
+  answerable: false
+  gold: []
+  refusal_layer: retrieval
+  answer: "Out of scope — immigration, not course data. The corpus has no visa information."
+
+- id: unans-atar
+  question: "What ATAR do I need to be admitted to study computing at UNSW?"
+  shape: unanswerable
+  answerable: false
+  gold: []
+  refusal_layer: retrieval
+  answer: "Out of scope — admissions/ATAR cut-offs were not scraped; the corpus is course and specialisation data only."
+
+- id: unans-scholarships
+  question: "What scholarships are available for first-year students?"
+  shape: unanswerable
+  answerable: false
+  gold: []
+  refusal_layer: retrieval
+  answer: "Out of scope — scholarship information is not part of the handbook course corpus."
+
+# In-domain course, out-of-scope attribute: retrieval WILL find the course (the
+# code is a strong lexical anchor), so the score threshold can't catch these —
+# only the citation-enforcing prompt can decline them. They test the generation
+# layer, not the threshold.
+- id: unans-lecturer-comp2521
+  question: "Who is the lecturer for COMP2521 this term?"
+  shape: unanswerable
+  answerable: false
+  gold: []
+  refusal_layer: generation
+  answer: "Not in corpus — the handbook chunks carry no teaching-staff/instructor data, though COMP2521 itself is a real course."
+
+- id: unans-exam-weight-comp1531
+  question: "How much is the final exam worth in COMP1531?"
+  shape: unanswerable
+  answerable: false
+  gold: []
+  refusal_layer: generation
+  answer: "Not in corpus — assessment weightings were not scraped, though COMP1531 itself is a real course."
