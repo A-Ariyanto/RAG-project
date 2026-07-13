@@ -82,9 +82,9 @@ PROBES: list[Probe] = [
     Probe("what are the exclusions for COMP3231?",
           "COMP3231", ("enrolment_conditions",),
           "code-anchored — 'Operating Systems' by name is ambiguous (COMP9201 too)"),
-    Probe("what course is equivalent to COMP9201",
+    Probe("which courses is COMP3231 equivalent to",
           "COMP3231", ("enrolment_conditions",),
-          "COMP9201 appears ONLY inside COMP3231's equivalent list — FTS-only find"),
+          "equivalents live in COMP3231's own enrolment chunk — exact-code find"),
     Probe("what is the exclusion for the Database Systems course",
           "COMP3311", ("enrolment_conditions",)),
 ]
