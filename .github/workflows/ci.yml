@@ -26,9 +26,12 @@ jobs:
         with:
           python-version: "3.13"  # matches the Dockerfile base image
           cache: pip
+          cache-dependency-path: requirements-test.txt
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      # The unit suite doesn't touch embeddings, so skip the heavy
+      # sentence-transformers/torch stack from requirements.txt.
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
 
       # The suite is pure unit tests (config wiring, sitemap URL filter,
       # __NEXT_DATA__ extraction) — no database and no network needed.
@@ -43,11 +46,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: docker/setup-buildx-action@v3
+
       # "Containerized from day one" is a project principle — verify the image
-      # still builds (catches Dockerfile / requirements.txt breakage) even
-      # though the test job installs the same deps directly.
+      # still builds (catches Dockerfile / requirements.txt breakage). The GHA
+      # layer cache means the torch-heavy pip layer only rebuilds when
+      # requirements.txt changes.
       - name: Build app image
-        run: docker build -t rag-project:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          tags: rag-project:ci
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # --- Future jobs (see ROADMAP.md) ---------------------------------------
   # Phase 5: `eval` job — runs the retrieval/groundedness/refusal eval script;
