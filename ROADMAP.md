@@ -17,8 +17,8 @@ This file is the **working tracker**: what to build, in what order, and what's d
 | Phase | Goal | Status |
 |---|---|---|
 | [0 — Scaffold](#phase-0--scaffold) | Repo + Docker Compose skeleton with a running Postgres | ✅ |
-| [1 — Corpus acquisition](#phase-1--corpus-acquisition) | ~300 raw handbook documents on disk | 🔲 |
-| [2 — Chunking + ingestion](#phase-2--chunking--ingestion) | Populated chunks table with embeddings + tsvector | 🔲 |
+| [1 — Corpus acquisition](#phase-1--corpus-acquisition) | ~300 raw handbook documents on disk | ✅ |
+| [2 — Chunking + ingestion](#phase-2--chunking--ingestion) | Populated chunks table with embeddings + tsvector | ✅ |
 | [3 — Hybrid retrieval](#phase-3--hybrid-retrieval-the-centerpiece) | The RRF SQL query, proven better than either method alone | 🔲 |
 | [4 — Service](#phase-4--service) | Streaming `/ask` endpoint with citations, refusal, and query logging | 🔲 |
 | [5 — Evaluation](#phase-5--evaluation) | Golden set + eval script running in CI, numbers in the README | 🔲 |
@@ -49,16 +49,16 @@ Phases are sequenced by dependency, not dates. Each phase has an exit criterion 
 **Goal:** ~300 raw CSE handbook documents (COMP/SENG courses + CS programs) stored on disk, rerunnable without re-scraping.
 
 **Tasks**
-- [ ] Discover the CourseLoop API request in browser DevTools (Network tab on a handbook course page — data domain is `api-ap-southeast-2.prod.courseloop.com`)
-- [ ] Test whether the API is callable with plain `requests`; if not, decide on the Playwright rendering fallback
-- [ ] Build the scraper: rate-limited, response caching, identifies the client politely
-- [ ] Scrape COMP/SENG course pages + CS program pages (~300 docs)
-- [ ] Store raw responses to disk so parsing is rerunnable without re-scraping
-- [ ] Spot-check the raw data: prerequisites, term offerings, UOC, and enrolment rules are present
+- [x] Discover the corpus URL list — used the handbook sitemap (robots-advertised) rather than the CloudFront-gated CourseLoop API, filtered to COMP/SENG courses + specialisations
+- [x] Test whether it's callable with plain `requests` — yes; the SSR `__NEXT_DATA__` payload carries everything, no Playwright fallback needed
+- [x] Build the scraper: rate-limited, response caching (skip-if-exists), identifies the client politely
+- [x] Scrape COMP/SENG course pages + specialisation pages (216 docs, 0 failures)
+- [x] Store raw responses to disk so parsing is rerunnable without re-scraping
+- [x] Spot-check the raw data: prerequisites (`enrolment_rules[].description`), term offerings, UOC, and enrolment rules are present
 
 **Cut from this phase (v1):** course outline PDFs — moved to the post-v1 roadmap.
 
-**Exit criterion:** ~300 raw documents on disk, spot-checked that prerequisites, term offerings, UOC, and enrolment rules are present in the data.
+**Exit criterion:** ✅ 216 raw documents on disk (`data/raw/`, gitignored), spot-checked that prerequisites, term offerings, UOC, and enrolment rules are present in the data. (Corpus is COMP/SENG only per the v1 scope, so ~216 rather than ~300.)
 
 ---
 
@@ -67,14 +67,14 @@ Phases are sequenced by dependency, not dates. Each phase has an exit criterion 
 **Goal:** a populated chunks table where every chunk is a self-contained, correctly attributed unit with an embedding and a tsvector.
 
 **Tasks**
-- [ ] Design the chunks table schema: id, course code, section type, text, source URL, scrape date, `vector` column, generated `tsvector` column with GIN index
-- [ ] Build the structure-aware chunker: split by section semantics (overview / conditions-for-enrolment / offering terms / rules), not fixed token windows
-- [ ] Parse enrolment-rule strings ("Prerequisite: COMP1531 AND (COMP2521 OR MTRN2500)") into queryable metadata
-- [ ] Embed chunks locally with sentence-transformers (`bge-small-en-v1.5`)
-- [ ] Write an idempotent ingest script (rerun = refresh)
-- [ ] Quality check: sample chunks and confirm they read as self-contained, correctly attributed units
+- [x] Design the chunks table schema (`ingestion/schema.sql`): id, doc_code, section_type, text, source_url, scraped_at, `vector(384)` column, generated `tsvector` column with GIN index, plus queryable rule metadata
+- [x] Build the structure-aware chunker (`ingestion/chunk.py`): split by section semantics (overview / enrolment_conditions / offering / learning_outcomes / structure / additional), not fixed token windows; every chunk code+title prefixed so it stands alone
+- [x] Parse enrolment-rule strings (`ingestion/rules.py`) into queryable metadata: rule_type + referenced course codes, raw boolean text kept verbatim (AST deferred)
+- [x] Embed chunks locally with sentence-transformers `bge-small-en-v1.5` (`ingestion/embed.py`)
+- [x] Write an idempotent ingest script (`ingestion/ingest.py`): per-doc delete+insert = refresh
+- [x] Quality check: sample chunks and confirm they read as self-contained, correctly attributed units
 
-**Exit criterion:** chunks table populated; sampled chunks read as self-contained, correctly attributed units.
+**Exit criterion:** ✅ `chunks` table populated (954 chunks from 216 docs, all embedded + tsvector'd); sampled chunks read as self-contained, correctly attributed units; ingest is idempotent (rerun holds at 954 rows); rule metadata is queryable (`referenced_codes`, `offering_terms`).
 
 ---
 
