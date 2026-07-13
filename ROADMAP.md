@@ -19,7 +19,7 @@ This file is the **working tracker**: what to build, in what order, and what's d
 | [0 — Scaffold](#phase-0--scaffold) | Repo + Docker Compose skeleton with a running Postgres | ✅ |
 | [1 — Corpus acquisition](#phase-1--corpus-acquisition) | ~300 raw handbook documents on disk | ✅ |
 | [2 — Chunking + ingestion](#phase-2--chunking--ingestion) | Populated chunks table with embeddings + tsvector | ✅ |
-| [3 — Hybrid retrieval](#phase-3--hybrid-retrieval-the-centerpiece) | The RRF SQL query, proven better than either method alone | 🔲 |
+| [3 — Hybrid retrieval](#phase-3--hybrid-retrieval-the-centerpiece) | The RRF SQL query, proven better than either method alone | ✅ |
 | [4 — Service](#phase-4--service) | Streaming `/ask` endpoint with citations, refusal, and query logging | 🔲 |
 | [5 — Evaluation](#phase-5--evaluation) | Golden set + eval script running in CI, numbers in the README | 🔲 |
 | [6 — Minimal frontend](#phase-6--minimal-frontend) | Browser chat view with clickable citations | 🔲 |
@@ -83,14 +83,14 @@ Phases are sequenced by dependency, not dates. Each phase has an exit criterion 
 **Goal:** a single hybrid SQL query where fused results demonstrably beat vector-only and FTS-only.
 
 **Tasks**
-- [ ] Write the RRF SQL query: CTE for vector KNN, CTE for `ts_rank`, joined with Reciprocal Rank Fusion scoring
-- [ ] Assemble a fixed set of ~15 probe queries covering prerequisites, term offerings, UOC, and enrolment rules
-- [ ] Iterate from a plain script (no API) comparing fused vs vector-only vs FTS-only results on the probe queries
-- [ ] Write down *why* hybrid beats each single method on at least a few queries (this becomes README material)
+- [x] Write the RRF SQL query (`app/retrieval.py:hybrid_search`): CTE for vector KNN, CTE for `ts_rank`, joined with Reciprocal Rank Fusion scoring; `vector_search`/`fts_search` expose the single-method baselines. Query-side embeddings use the bge instruction prefix (`ingestion/embed.py:embed_query`)
+- [x] Assemble a fixed set of 15 probe queries (`scripts/probe_retrieval.py`) covering prerequisites, term offerings, UOC, and enrolment rules (exclusion/equivalent)
+- [x] Iterate from a plain script (no API) comparing fused vs vector-only vs FTS-only — surfaced two lexical fixes (OR-rewritten `plainto_tsquery`, length-normalised `ts_rank`) and a Phase 2 chunk-text fix (natural-language offering sentence)
+- [x] Write down *why* hybrid beats each single method ([docs/RETRIEVAL.md](docs/RETRIEVAL.md) — README material)
 
 Do not touch FastAPI until this works.
 
-**Exit criterion:** for the probe queries, the right chunk is in the top 3 nearly always, and I can articulate why hybrid beats each single method on at least a few queries.
+**Exit criterion:** ✅ hybrid gets the right chunk in the top 3 on **14/15** probes (vector 9/15, FTS 14/15). Fusion recovers 5 probes vector alone ranked out of top 3; the honest finding is that for code/name-anchored enrolment queries a well-tuned FTS is a strong baseline and hybrid's edge is robustness + semantic recovery (see [docs/RETRIEVAL.md](docs/RETRIEVAL.md)). One probe all three miss (subject-course disambiguation) is documented and deferred.
 
 ---
 
