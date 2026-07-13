@@ -172,6 +172,42 @@ def retrieval_report(items: list[Item], retrieved: dict[str, Retrieved]) -> Retr
     return RetrievalReport(overall=_hit_rates(answerable, retrieved), by_phrasing=by_phrasing)
 
 
+@dataclass
+class FusionCase:
+    id: str
+    question: str
+    others: list[str]  # single methods on the other side of the comparison
+
+
+def fusion_diagnostics(
+    items: list[Item], retrieved: dict[str, Retrieved], within: int = 3
+) -> tuple[list[FusionCase], list[FusionCase]]:
+    """Where fusion changes the answer vs the single methods, at hit@`within`.
+
+    rescues     — hybrid hits but a single method misses (fusion recovers a chunk).
+    regressions — hybrid misses but a single method hits (fusion drags a chunk out).
+    The honest flip side of the hit-rate table: RRF fuses a noisy vector ranking
+    into a strong FTS one, so it can both rescue and regress. Listing both keeps
+    the retrieval story truthful rather than cherry-picked.
+    """
+    rescues: list[FusionCase] = []
+    regressions: list[FusionCase] = []
+    for it in items:
+        if not it.answerable:
+            continue
+        hit = {
+            m: _hit_rank(getattr(retrieved[it.id], m), it.gold, within) is not None
+            for m in ("hybrid", "vector", "fts")
+        }
+        singles_missed = [m for m in ("vector", "fts") if not hit[m]]
+        singles_hit = [m for m in ("vector", "fts") if hit[m]]
+        if hit["hybrid"] and singles_missed:
+            rescues.append(FusionCase(it.id, it.question, singles_missed))
+        if not hit["hybrid"] and singles_hit:
+            regressions.append(FusionCase(it.id, it.question, singles_hit))
+    return rescues, regressions
+
+
 # --- 2. refusal threshold sweep ----------------------------------------------
 
 
