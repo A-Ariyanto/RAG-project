@@ -32,14 +32,18 @@ class Settings(BaseSettings):
     # How many fused chunks to hand the generator as grounding context.
     retrieval_top_k: int = 5
     # Below this fused RRF score for the top chunk, skip generation and refuse
-    # with the nearest matches. Placeholder — tuned against the golden set in
-    # Phase 5. Reference RRF math (k=60): both retrievers ranking a chunk #1
-    # scores ~0.033; a single retriever's lone #1 scores ~0.0164. Observed
-    # in-domain questions land ~0.031 (both halves agree near the top) while an
-    # out-of-domain probe ("capital of France") scored 0.0164 (one weak lexical
-    # hit). This floor sits in that gap so a lone weak match refuses; Phase 5
-    # trades precision vs recall against real labels.
-    refusal_threshold: float = 0.02
+    # with the nearest matches. Tuned against the golden set in Phase 5
+    # (`scripts/eval.py` threshold sweep). Reference RRF math (k=60): both
+    # retrievers ranking a chunk #1 scores ~0.033; a single retriever's lone #1
+    # scores ~0.0164. The sweep's balanced-accuracy optimum was 0.0306 (keeps
+    # 26/28 answerable, refuses 4/4 off-corpus), but that buys the last off-corpus
+    # refusal ("what ATAR to study computing at UNSW" — lexically/semantically
+    # overlaps CS content, ~0.0305) at the cost of two genuinely-answerable
+    # questions. We sit just under it at 0.030 to keep answerable recall at 28/28
+    # and refuse 3/4 clean off-corpus; the citation-enforcing prompt is the second
+    # net for the residual course-named-but-missing-attribute questions (measured
+    # 2/2 correct declines in the groundedness eval). See eval/results.md.
+    refusal_threshold: float = 0.030
 
     @property
     def database_url(self) -> str:
