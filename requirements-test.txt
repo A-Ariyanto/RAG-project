@@ -1,0 +1,9 @@
+# Deps for the unit test suite only (CI test job). The suite exercises config
+# wiring, chunking, rule parsing, and scraper URL/extraction logic — none of it
+# touches embeddings, so the heavy sentence-transformers/torch stack from
+# requirements.txt is deliberately not pulled in here. If a future test needs a
+# runtime dep, add it here too (CI fails with ImportError otherwise).
+pytest>=8.0
+pydantic>=2.0
+pydantic-settings>=2.0
+requests>=2.31
