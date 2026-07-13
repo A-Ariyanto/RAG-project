@@ -468,11 +468,25 @@ def render_markdown(
             f"| {code_hr.method} | {_pct(code_hr.hits[3], code_hr.n)} "
             f"| {_pct(name_hr.hits[3], name_hr.n)} |"
         )
-    out.append(
-        "\nFTS leads on code-anchored questions and vector leads on name-only "
-        "ones; hybrid tracks the stronger method on each, so it's the only "
-        "retriever that doesn't collapse when the phrasing flips.\n"
-    )
+    out.append("")
+
+    # 1c. where fusion helps vs hurts (hit@3), by specific question
+    rescues, regressions = fusion
+    out.append("**Where fusion changes the outcome (hit@3):**\n")
+    if rescues:
+        out.append("_Rescued by fusion_ (hybrid hits, a single method misses):")
+        for c in rescues:
+            out.append(f"- `{c.id}` — \"{c.question}\" (missed by: {', '.join(c.others)})")
+    else:
+        out.append("_Rescued by fusion:_ none.")
+    out.append("")
+    if regressions:
+        out.append("_Regressed by fusion_ (hybrid misses, a single method hits):")
+        for c in regressions:
+            out.append(f"- `{c.id}` — \"{c.question}\" (hit by: {', '.join(c.others)})")
+    else:
+        out.append("_Regressed by fusion:_ none.")
+    out.append("")
 
     # 2. refusal sweep
     out.append("### Refusal threshold sweep\n")
@@ -535,6 +549,7 @@ async def run(no_judge: bool) -> None:
         retrieved = {it.id: await retrieve_all(conn, it) for it in items}
 
         hit = retrieval_report(items, retrieved)
+        fusion = fusion_diagnostics(items, retrieved)
         sweep = threshold_sweep(items, retrieved)
 
         ground: GroundednessReport | None = None
@@ -555,7 +570,7 @@ async def run(no_judge: bool) -> None:
     finally:
         await conn.close()
 
-    report = render_markdown(items, hit, sweep, ground)
+    report = render_markdown(items, hit, fusion, sweep, ground)
     RESULTS_PATH.write_text(report + "\n")
     print("\n" + report)
     print(f"\n(Written to {RESULTS_PATH.relative_to(GOLDEN_PATH.parent.parent)})")
