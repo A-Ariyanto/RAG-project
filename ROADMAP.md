@@ -135,9 +135,13 @@ Do not touch FastAPI until this works.
 
 **Goal:** a browser chat view — deliberately minimal, the backend is the star. Timebox hard.
 
+**Stack:** Vite + React + Tailwind, in a `frontend/` directory in this repo (same repo, same deploy story; served same-origin from FastAPI so no CORS config). Minimal now, but the tooling holds up if the UI grows later.
+
 **Tasks**
-- [ ] Single-page React chat view consuming the SSE stream
+- [ ] Scaffold `frontend/` with Vite + React + Tailwind
+- [ ] Single-page chat view consuming the SSE stream
 - [ ] Render citations as links to the source handbook URLs
+- [ ] Serve the built bundle from FastAPI (static files, same origin)
 
 **Exit criterion:** I can ask a question in a browser and click a citation through to the handbook.
 
